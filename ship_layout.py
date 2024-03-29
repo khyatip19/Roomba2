@@ -74,4 +74,4 @@ dead_end_opening_fraction = 0.5
 ship_layout = generate_ship_layout(D, dead_end_opening_fraction)
 
 print(ship_layout)
-visualize_layout(ship_layout)
+#visualize_layout(ship_layout)
