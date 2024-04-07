@@ -405,6 +405,7 @@ def simulate(D, k_value, alpha_value, grid_layout):
     crew_rescued = [False, False]  
     crew1_rescued = False
     crew2_rescued = False
+    crew_saved_count = 0
     steps = 0
     path = []
     plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
@@ -455,10 +456,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
 
 
         # Update the crew member's probability if the bot has moved into their cell
-        if bot_pos == crew_pos1:
+        if bot_pos == crew_pos1 and not crew_rescued[0]:
             #print(f"Crew member found at {crew_pos1} in {steps} steps.")
             # crew_rescued1 = True
             crew_rescued[0] = True
+            crew_saved_count += 1
             # prob_crew[bot_pos] = 0
             prob_crew[crew_pos1[0], crew_pos1[1]] = 0
             # Normalize the probabilities for the remaining crew member
@@ -466,10 +468,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
 
 
         # Update the crew member's probability if the bot has moved into their cell
-        if bot_pos == crew_pos2:
+        if bot_pos == crew_pos2 and not crew_rescued[1]:
             #print(f"Crew member found at {crew_pos2} in {steps} steps.")
             # crew_rescued2 = True
             crew_rescued[1] = True
+            crew_saved_count += 1
             # prob_crew[bot_pos] = 0
             prob_crew[crew_pos2[0], crew_pos2[1]] = 0
             # Normalize the probabilities for the remaining crew member
@@ -524,7 +527,7 @@ def simulate(D, k_value, alpha_value, grid_layout):
 
         # Visualizing the grid, alien, bot, and crew members
         #visualize_grid(grid, grid_layout, prob_alien, prob_crew, bot_pos, alien_pos, [crew_pos1, crew_pos2], k, path, crew_rescued)
-    return steps, bot_alive, crew_rescued
+    return steps, bot_alive, crew_rescued, crew_saved_count
     #plt.ioff()  # Turn off interactive mode
     #plt.show()  # Show the plot at the end
         
@@ -538,6 +541,7 @@ def run_simulations_with_parameters(k_range, alpha_range, num_simulations=1):
         for alpha_value in alpha_range:
             total_steps = 0
             success_count = 0
+            total_crew_saved = 0            
             for simulation_index in range(num_simulations):
                 # grid, grid_layout = initialize_grid(D)
                 # prob_alien = np.full((D, D), 1/(D*D - 1))
@@ -548,11 +552,13 @@ def run_simulations_with_parameters(k_range, alpha_range, num_simulations=1):
                 total_steps += steps
                 if crew_rescued:
                     success_count += 1
+                total_crew_saved += crew_saved
                 print(f"Completed: k={k_value}, alpha={alpha_value}, simulation={simulation_index+1}/{num_simulations}")
 
             avg_steps = total_steps / num_simulations
             success_rate = success_count / num_simulations
-            results.append({'k': k_value, 'alpha': alpha_value, 'avg_steps': avg_steps, 'success_rate': success_rate})  # Note: Changed k to k_value
+            avg_crew_saved = total_crew_saved / num_simulations  # Calculate average crew members saved
+            results.append({'k': k_value, 'alpha': alpha_value, 'avg_steps': avg_steps, 'success_rate': success_rate,'avg_crew_saved': avg_crew_saved}) 
 
     return pd.DataFrame(results)
 

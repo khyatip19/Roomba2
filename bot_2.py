@@ -180,7 +180,7 @@ def update_beliefs(bot_pos, alien_pos, crew_pos, D, k_value, alpha_value, prob_a
 
 from queue import Queue
 
-def find_path_with_risk_assessment(start, goal, ship_layout, risk_scores, risk_multiplier=2.5):
+def find_path_with_risk_assessment(start, goal, ship_layout, risk_scores, risk_multiplier=10):
     D = ship_layout.shape[0]
     open_set = PriorityQueue()
     open_set.put((0, start))

@@ -28,8 +28,8 @@ BLOCKED = 0
 # Simulation parameters
 # num_simulations = 10  # Number of simulations for each combination of parameters
 D = 35  # Dimension of the grid
-k = range(3, 7)  # From 3 to 7 inclusive
-alpha_range = np.arange(0, 0.6, 0.1)  # From 0 to 1 in increments of 0.1
+k = range(3, 8)  # From 3 to 7 inclusive
+alpha_range = np.linspace(0.01, 0.2, 30)   # From 0 to 1 in increments of 0.1
 
 def initialize_grid(D):
     """Initialize the simulation grid with blocked and unblocked cells."""
@@ -331,17 +331,20 @@ def debug_prints(bot_pos, alien_pos, crew_pos1, crew_pos2):
 
 def simulate(D, k_value, alpha_value, grid_layout):
     #grid, grid_layout = initialize_grid(D)
-    grid, prob_alien, prob_crew = reset_for_new_iteration(np.empty((D, D)), grid_layout)
+        # Initialize grid based on the fixed layout
+    grid = np.where(grid_layout == 1, EMPTY, BLOCKED)
+    #grid, prob_alien, prob_crew = reset_for_new_iteration(np.empty((D, D)), grid_layout)
     bot_pos, crew_pos1, crew_pos2, alien_pos = place_entities(grid, D, k_value, grid_layout)
     # prob_alien, prob_crew = initialize_probabilities(grid, D, bot_pos, k)
-    # prob_alien = np.full((D, D), 1/(D*D - 1))  # Initial belief about alien location
-    # prob_crew = np.full((D, D), 1/(D*D - 3))  # Initial belief about crew member location
+    prob_alien = np.full((D, D), 1/(D*D - 1))  # Initial belief about alien location
+    prob_crew = np.full((D, D), 1/(D*D - 3))  # Initial belief about crew member location
 
     bot_alive = True
     crew_rescued = [False, False]  
     crew1_rescued = False
     crew2_rescued = False
     steps = 0
+    crew_saved_count = 0  # Initialize counter for saved crew members
     path = []
     plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
  
@@ -420,10 +423,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
             prob_alien[bot_pos[0], bot_pos[1]] = 0
 
         # Update the crew member's probability if the bot has moved into their cell
-        if bot_pos == crew_pos1:
+        if bot_pos == crew_pos1 and not crew_rescued[0]:
             #print(f"Crew member found at {crew_pos1} in {steps} steps.")
             # crew_rescued1 = True
             crew_rescued[0] = True
+            crew_saved_count += 1
             # prob_crew[bot_pos] = 0
             prob_crew[crew_pos1[0], crew_pos1[1]] = 0
             crew_pos1 = None  # Indicate that Crew Member 1 has been rescued and is no longer on the grid
@@ -432,10 +436,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
 
 
         # Update the crew member's probability if the bot has moved into their cell
-        if bot_pos == crew_pos2:
+        if bot_pos == crew_pos2 and not crew_rescued[1]:
             #print(f"Crew member found at {crew_pos2} in {steps} steps.")
             # crew_rescued2 = True
             crew_rescued[1] = True
+            crew_saved_count += 1
             # prob_crew[bot_pos] = 0
             prob_crew[crew_pos2[0], crew_pos2[1]] = 0
             crew_pos2 = None  # Indicate that Crew Member 2 has been rescued and is no longer on the grid
@@ -471,7 +476,7 @@ def simulate(D, k_value, alpha_value, grid_layout):
 
         # Visualizing the grid, alien, bot, and crew members
         #visualize_grid(grid, grid_layout, prob_alien, prob_crew, bot_pos, alien_pos, [crew_pos1, crew_pos2], k, path, crew_rescued)
-    return steps, bot_alive, crew_rescued
+    return steps, bot_alive, crew_rescued, crew_saved_count
     #plt.ioff()  # Turn off interactive mode
     #plt.show()  # Show the plot at the end
         
@@ -484,20 +489,24 @@ def run_simulations_with_parameters(k_range, alpha_range, num_simulations=1):
         for alpha_value in alpha_range:
             total_steps = 0
             success_count = 0
+            total_crew_saved = 0
             for simulation_index in range(num_simulations):
                 # grid, grid_layout = initialize_grid(D)
                 # prob_alien = np.full((D, D), 1/(D*D - 1))
                 # prob_crew = np.full((D, D), 1/(D*D - 2))
                 #bot_pos, crew_pos, alien_pos = place_entities(grid, D, k_value, grid_layout)  # Use k_value here
-                steps, bot_alive, crew_rescued = simulate(D, k_value, alpha_value, grid_layout)  # And here
+                steps, bot_alive, crew_rescued, crew_saved = simulate(D, k_value, alpha_value, grid_layout)  # And here
 
                 total_steps += steps
                 if crew_rescued:
                     success_count += 1
-                print(f"Completed: k={k_value}, alpha={alpha_value}, simulation={simulation_index+1}/{num_simulations}")
+                total_crew_saved += crew_saved
+                print(f"Completed: k={k_value}, alpha={alpha_value}, simulation={simulation_index+1}/{num_simulations}, Crew Saved: {crew_saved}")
+                
             avg_steps = total_steps / num_simulations
             success_rate = success_count / num_simulations
-            results.append({'k': k_value, 'alpha': alpha_value, 'avg_steps': avg_steps, 'success_rate': success_rate})  # Note: Changed k to k_value
+            avg_crew_saved = total_crew_saved / num_simulations  # Calculate average crew members saved
+            results.append({'k': k_value, 'alpha': alpha_value, 'avg_steps': avg_steps, 'success_rate': success_rate,'avg_crew_saved': avg_crew_saved})  # Note: Changed k to k_value
 
     return pd.DataFrame(results)
 
@@ -508,7 +517,7 @@ results_df = run_simulations_with_parameters(k, alpha_range, num_simulations=10)
 # Display the results
 print(results_df)
 
-csv_file_path = "/Users/vatsalajha/Desktop/AI_Project/roomba2/dewdn/Roomba2/bot_3.csv"
+csv_file_path = "D:/USA Docs/Rutgers/Intro to AI/Project 2/Roomba2/bot_3.csv"
 
 # Save the DataFrame to a CSV file
 results_df.to_csv(csv_file_path, index=False)

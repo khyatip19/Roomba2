@@ -76,7 +76,8 @@ def manhattan_distance(x1, y1, x2, y2):
 
 def detect_alien(bot_pos, alien_pos,k_value):
     """Determines if an alien is within detection range of the bot using Manhattan distance."""
-    return manhattan_distance(bot_pos[0], bot_pos[1], alien_pos[0], alien_pos[1]) <= 2*(k_value) + 1
+    #return manhattan_distance(bot_pos[0], bot_pos[1], alien_pos[0], alien_pos[1]) <= 2*(k_value) + 1
+    return abs(alien_pos[0] - bot_pos[0]) <= k_value and abs(alien_pos[1] - bot_pos[1]) <= k_value
 
 def detect_beep(crew_pos, bot_pos, alpha_value):
     """Simulates beep detection with a probability based on distance using the Manhattan distance."""
@@ -321,11 +322,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
 
         update_beliefs(bot_pos, alien_pos, crew_pos, D, k_value, alpha_value, prob_alien, prob_crew, grid_layout)
 
-        # If the bot is adjacent to the crew member, rescue immediately
-        if manhattan_distance(bot_pos[0], bot_pos[1], crew_pos[0], crew_pos[1]) == 1:
-            #print(f"Crew member rescued by bot at position {bot_pos} in {steps} steps.")
-            crew_rescued = True
-            break
+        # # If the bot is adjacent to the crew member, rescue immediately
+        # if manhattan_distance(bot_pos[0], bot_pos[1], crew_pos[0], crew_pos[1]) == 1:
+        #     #print(f"Crew member rescued by bot at position {bot_pos} in {steps} steps.")
+        #     crew_rescued = True
+        #     break
 
         next_step, path = choose_next_move(bot_pos, prob_alien, prob_crew, D, grid_layout)
         bot_pos = next_step
