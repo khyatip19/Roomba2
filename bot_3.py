@@ -26,14 +26,10 @@ CREW_MEMBER = 4
 BLOCKED = 0
 
 # Simulation parameters
-# D = 15  # Dimension of the grid
-# k = 3  # Sensor range for alien detection
-# alpha = 0.5  # Beep probability factor
-
-# Example parameters and simulation run
+# num_simulations = 10  # Number of simulations for each combination of parameters
 D = 35  # Dimension of the grid
-k = range(3, 8)  # From 3 to 7 inclusive
-alpha_range = np.linspace(0.01, 0.2, 30)   # From 0 to 1 in increments of 0.1
+k = range(3, 7)  # From 3 to 7 inclusive
+alpha_range = np.arange(0, 0.6, 0.1)  # From 0 to 1 in increments of 0.1
 
 def initialize_grid(D):
     """Initialize the simulation grid with blocked and unblocked cells."""
@@ -45,7 +41,7 @@ def reset_for_new_iteration(grid, ship_layout):
     # Reset grid and probabilities for a new iteration without changing the ship layout
     grid[:] = np.where(ship_layout == 1, EMPTY, BLOCKED)
     prob_alien = np.full((D, D), 1/(D*D - 1))
-    prob_crew = np.full((D, D), 1/(D*D - 2))
+    prob_crew = np.full((D, D), 1/(D*D - 3))
     return grid, prob_alien, prob_crew
 
 def place_entities(grid, D, k_value, grid_layout):
@@ -90,7 +86,13 @@ def manhattan_distance(x1, y1, x2, y2):
 
 def detect_alien(bot_pos, alien_pos, k_value):
     """Determines if an alien is within detection range of the bot using Manhattan distance."""
-    return manhattan_distance(bot_pos[0], bot_pos[1], alien_pos[0], alien_pos[1]) <= 2*(k_value) + 1
+    #print(type(k))
+    left = bot_pos[1] - k_value
+    right = bot_pos[1] + k_value
+    top = bot_pos[0] - k_value
+    bottom = bot_pos[0] + k_value
+    return (left <= alien_pos[1] <= right) and (top <= alien_pos[0] <= bottom)
+    # return manhattan_distance(bot_pos[0], bot_pos[1], alien_pos[0], alien_pos[1]) <= 2*(k_value) + 1
 
 def detect_beep_individual(crew_pos, bot_pos,alpha_value):
     """Simulate beep detection from both crew members."""
@@ -118,7 +120,6 @@ def update_beliefs(bot_pos, alien_pos, crew_pos1, crew_pos2, D, k_value, alpha_v
         for y in range(D):
             if not grid_layout[(x, y)]:  # Skip updating beliefs for blocked cells
                 continue
-
             distance = manhattan_distance(x, y, bot_pos[0], bot_pos[1])
 
             # Check if the cell is within the detection square of the bot
@@ -140,18 +141,20 @@ def update_beliefs(bot_pos, alien_pos, crew_pos1, crew_pos2, D, k_value, alpha_v
             # Update for beep detection from either crew member
             if beep_detected:
                 # Increase probability for closer cells based on beep detection
-                prob_crew[x, y] = prob_crew[x, y]*np.exp(-alpha_value * (distance - 1))
+                prob_crew[x, y] *= np.exp(-alpha_value * (distance - 1))
             else:
                 # Decrease probability for cells outside beep range
                 prob_crew[x, y] = prob_crew[x, y]*(1 - np.exp(-alpha_value * (distance - 1)))
 
     # After updating beliefs, ensure that blocked cells have zero probability
-    # for x in range(D):
-    #     for y in range(D):
-    #         if grid_layout[x, y] == BLOCKED:
-    #             prob_alien[x, y] = 0
-    #             prob_crew[x, y] = 0
+    for x in range(D):
+        for y in range(D):
+            if grid_layout[x, y] == BLOCKED:
+                prob_alien[x, y] = 0
+                prob_crew[x, y] = 0
 
+    # After the loop, normalize the probabilities
+    prob_alien = np.where(prob_alien > 0, prob_alien, 0)  # Ensure no negative probabilities
     # Normalize only non-blocked cells
     total_prob_alien = np.sum(prob_alien[grid_layout == EMPTY])
     total_prob_crew = np.sum(prob_crew[grid_layout == EMPTY])
@@ -168,13 +171,19 @@ def update_beliefs(bot_pos, alien_pos, crew_pos1, crew_pos2, D, k_value, alpha_v
         for y in range(D):
             if prob_alien[x, y] > 0:
                 adjacent_open_cells = get_adjacent_open_cells(x, y, grid_layout)
-                distributed_prob = prob_alien[x, y] / len(adjacent_open_cells) if adjacent_open_cells else prob_alien[x, y]
-                for adj_x, adj_y in adjacent_open_cells:
-                    new_prob_alien[adj_x, adj_y] += distributed_prob
+                # If the cell has adjacent open cells, diffuse the probability
+                if adjacent_open_cells:
+                    distributed_prob = prob_alien[x, y] / len(adjacent_open_cells)
+                    for adj_x, adj_y in adjacent_open_cells:
+                        new_prob_alien[adj_x, adj_y] += distributed_prob
+                else:
+                    # If no adjacent cells, keep the probability in the cell
+                    new_prob_alien[x, y] = prob_alien[x, y]
 
     # Update the alien belief matrix if there are any probabilities to diffuse
-    if np.sum(new_prob_alien) > 0:
-        prob_alien[:] = new_prob_alien / np.sum(new_prob_alien)
+    prob_alien = new_prob_alien
+    if np.sum(prob_alien) > 0:
+      prob_alien /= np.sum(prob_alien)
 
     #prob_alien /= np.sum(prob_alien)  # Ensure the matrix is normalized again after diffusion
 
@@ -225,14 +234,6 @@ def choose_next_move(bot_pos, prob_alien, prob_crew, D, grid_layout):
         return path[0], path  # Return the next step and the full path
     else:
         return bot_pos, []  # If no path, return the current position and an empty path
-
-# def move_alien(alien_pos, D):
-#     # All possible movements including staying in place
-#     moves = [(0, 0), (0, 1), (0, -1), (1, 0), (-1, 0)]
-#     move = random.choice(moves)  # Randomly choose a move
-#     # Calculate new position and ensure it's within grid bounds
-#     new_pos = (max(0, min(D - 1, alien_pos[0] + move[0])), max(0, min(D - 1, alien_pos[1] + move[1])))
-#     return new_pos
 
 def visualize_grid(grid, grid_layout, prob_alien, prob_crew, bot_pos, alien_pos, crew_positions, k, path, crew_rescued):
     plt.ion()  # Turn on interactive mode
@@ -319,7 +320,7 @@ def visualize_grid(grid, grid_layout, prob_alien, prob_crew, bot_pos, alien_pos,
     plt.colorbar(mappable=ax3.imshow(prob_crew, cmap='Blues'), ax=ax3)
 
     plt.draw()
-    plt.pause(0.1)  # Pause for a brief moment to update the plot
+    plt.pause(0.4)  # Pause for a brief moment to update the plot
     plt.close()
 
 def debug_prints(bot_pos, alien_pos, crew_pos1, crew_pos2):
@@ -330,14 +331,8 @@ def debug_prints(bot_pos, alien_pos, crew_pos1, crew_pos2):
 
 def simulate(D, k_value, alpha_value, grid_layout):
     #grid, grid_layout = initialize_grid(D)
-    # bot_pos, crew_positions, alien_pos = place_entities(grid, D, k)
-        # Initialize grid based on the fixed layout
-    grid = np.where(grid_layout == 1, EMPTY, BLOCKED)
-
     grid, prob_alien, prob_crew = reset_for_new_iteration(np.empty((D, D)), grid_layout)
-    #bot_pos, crew_pos, alien_pos = place_entities(grid, D, k_value, grid_layout)
-
-    bot_pos, crew_pos1, crew_pos2, alien_pos = place_entities(grid, D, k_value, grid_layout)  # Adjusted for two crew members
+    bot_pos, crew_pos1, crew_pos2, alien_pos = place_entities(grid, D, k_value, grid_layout)
     # prob_alien, prob_crew = initialize_probabilities(grid, D, bot_pos, k)
     # prob_alien = np.full((D, D), 1/(D*D - 1))  # Initial belief about alien location
     # prob_crew = np.full((D, D), 1/(D*D - 3))  # Initial belief about crew member location
@@ -351,23 +346,28 @@ def simulate(D, k_value, alpha_value, grid_layout):
     plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
  
     while bot_alive and not all(crew_rescued) and steps < 1000: 
-        # Check for game over conditions
-
-        # beep_detected = False
-        
-        # Check for beep detection from each crew member individually
-        # if not crew_rescued[0]:
-        #     beep_detected |= detect_beep_individual(crew_pos1, bot_pos)
-        # if not crew_rescued[1]:
-        #     beep_detected |= detect_beep_individual(crew_pos2, bot_pos) 
+        if bot_pos == alien_pos:
+            print(f"Bot destroyed by alien at step {steps}.")
+            bot_alive = False
+            break
         
         update_beliefs(bot_pos, alien_pos, crew_pos1, crew_pos2, D, k_value, alpha_value, prob_alien, prob_crew, grid_layout, crew_rescued)
         
-        # If the bot is adjacent to the crew member, rescue immediately
+         # If the bot is adjacent to the crew member, rescue immediately
+        # if manhattan_distance(bot_pos[0], bot_pos[1], crew_pos1[0], crew_pos1[1]) == 1:
+        #     print(f"Crew member rescued by bot at position {bot_pos} in {steps} steps.")
+        #     crew_rescued = True
+        #     break
+        #  # If the bot is adjacent to the crew member, rescue immediately
+        # if manhattan_distance(bot_pos[0], bot_pos[1], crew_pos2[0], crew_pos2[1]) == 1:
+        #     print(f"Crew member rescued by bot at position {bot_pos} in {steps} steps.")
+        #     crew_rescued = True
+        #     break
 
+        # If the bot is adjacent to the crew member, rescue immediately
         next_step, path = choose_next_move(bot_pos, prob_alien, prob_crew, D, grid_layout)
-        if prob_alien[next_step[0],next_step[1]] >= 0.7:
-            
+
+        if prob_alien[next_step[0],next_step[1]] >= 0.7: 
             potential_bot_moves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
             valid_bot_moves = [move for move in potential_bot_moves if
                              0 <= bot_pos[0] + move[0] < D and
@@ -385,11 +385,36 @@ def simulate(D, k_value, alpha_value, grid_layout):
                 next_step = actual_move
 
         bot_pos = next_step
-        if (bot_pos!=crew_pos1 or bot_pos!=crew_pos2 ):
-            prob_crew[bot_pos[0], bot_pos[1]] = 0
+
+        for i, crew in enumerate([crew_pos1, crew_pos2]):
+            if crew is not None and bot_pos == crew and not crew_rescued[i]:
+                crew_rescued[i] = True
+                prob_crew[crew[0], crew[1]] = 0
+
+        print(f"Bot moving to {bot_pos}")
+
+        # Debug prints after the first move
+        if steps == 0:
+            debug_prints(bot_pos, alien_pos, crew_pos1, crew_pos2)
+
+        steps += 1
+
+         # Potential alien moves (up, down, left, right)
+        potential_alien_moves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        valid_alien_moves = [move for move in potential_alien_moves if
+                             0 <= alien_pos[0] + move[0] < D and
+                             0 <= alien_pos[1] + move[1] < D and
+                             grid_layout[alien_pos[0] + move[0], alien_pos[1] + move[1]] != BLOCKED]
+
+        # Choose a random valid move for the alien
+        if valid_alien_moves:  # Ensure there are valid moves
+            alien_move = random.choice(valid_alien_moves)
+            alien_pos = (alien_pos[0] + alien_move[0], alien_pos[1] + alien_move[1])
+
+        print(f"Alien moves to {alien_pos}")
 
         if bot_pos == alien_pos:
-            #print(f"Bot destroyed by alien at step {steps}.")
+            print(f"Bot destroyed by alien at step {steps}.")
             break
         else:
             prob_alien[bot_pos[0], bot_pos[1]] = 0
@@ -417,27 +442,7 @@ def simulate(D, k_value, alpha_value, grid_layout):
             # Normalize the probabilities for the remaining crew member
             prob_crew /= prob_crew.sum()
 
-        
         #print(f"Bot moving to {bot_pos}")
-        # Debug prints after the first move
-        if steps == 0:
-            debug_prints(bot_pos, alien_pos, crew_pos1, crew_pos2)
-
-        steps += 1
-
-        # Potential alien moves (up, down, left, right)
-        potential_alien_moves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-        valid_alien_moves = [move for move in potential_alien_moves if
-                             0 <= alien_pos[0] + move[0] < D and
-                             0 <= alien_pos[1] + move[1] < D and
-                             grid_layout[alien_pos[0] + move[0], alien_pos[1] + move[1]] != BLOCKED]
-
-        # Choose a random valid move for the alien
-        if valid_alien_moves:  # Ensure there are valid moves
-            alien_move = random.choice(valid_alien_moves)
-            alien_pos = (alien_pos[0] + alien_move[0], alien_pos[1] + alien_move[1])
-
-        #print(f"Alien moves to {alien_pos}")
 
         # Check for game over conditions
         if bot_pos == alien_pos:
@@ -448,11 +453,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
             # Adjust probabilities for remaining crew member(s)
 
         if all(crew_rescued):
-            #print("All crew members rescued.")
+            print("All crew members rescued.")
             break
 
         if steps >= 1000:
-            #print("Simulation ended without rescuing the crew member.")
+            print("Simulation ended without rescuing the crew member.")
             break
 
         # Update grid for visualization
@@ -480,7 +485,6 @@ def run_simulations_with_parameters(k_range, alpha_range, num_simulations=1):
             total_steps = 0
             success_count = 0
             for simulation_index in range(num_simulations):
-                
                 # grid, grid_layout = initialize_grid(D)
                 # prob_alien = np.full((D, D), 1/(D*D - 1))
                 # prob_crew = np.full((D, D), 1/(D*D - 2))
@@ -497,8 +501,6 @@ def run_simulations_with_parameters(k_range, alpha_range, num_simulations=1):
 
     return pd.DataFrame(results)
 
-
-
 # Run the simulations
 #print(type(k))
 results_df = run_simulations_with_parameters(k, alpha_range, num_simulations=10)
@@ -506,8 +508,7 @@ results_df = run_simulations_with_parameters(k, alpha_range, num_simulations=10)
 # Display the results
 print(results_df)
 
-
-csv_file_path = "D:/USA Docs/Rutgers/Intro to AI/Project 2/Roomba2/bot3.csv"
+csv_file_path = "/Users/vatsalajha/Desktop/AI_Project/roomba2/dewdn/Roomba2/bot_3.csv"
 
 # Save the DataFrame to a CSV file
 results_df.to_csv(csv_file_path, index=False)
