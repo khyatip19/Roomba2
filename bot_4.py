@@ -353,11 +353,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
     # Initialize grid based on the fixed layout
     grid = np.where(grid_layout == 1, EMPTY, BLOCKED)
 
-    grid, prob_alien, prob_crew = reset_for_new_iteration(np.empty((D, D)), grid_layout)
+    #grid, prob_alien, prob_crew = reset_for_new_iteration(np.empty((D, D)), grid_layout)
     bot_pos, crew_pos1, crew_pos2, alien_pos = place_entities(grid, D, k_value, grid_layout)  # Adjusted for two crew members
     # prob_alien, prob_crew = initialize_probabilities(grid, D, bot_pos, k)
-    # prob_alien = np.full((D, D), 1/(D*D - 1))  # Initial belief about alien location
-    # prob_crew = np.full((D, D), 1/(D*D - 3))  # Initial belief about crew member location
+    prob_alien = np.full((D, D), 1/(D*D - 1))  # Initial belief about alien location
+    prob_crew = np.full((D, D), 1/(D*D - 3))  # Initial belief about crew member location
 
     bot_alive = True
     crew_rescued = [False, False]  
@@ -522,7 +522,7 @@ results_df = run_simulations_with_parameters(k, alpha_range, num_simulations=10)
 print(results_df)
 
 
-csv_file_path = "D:/USA Docs/Rutgers/Intro to AI/Project 2/Roomba2/simulation_results_bot4.csv"
+csv_file_path = "D:/USA Docs/Rutgers/Intro to AI/Project 2/Roomba2/bot4.csv"
 
 # Save the DataFrame to a CSV file
 results_df.to_csv(csv_file_path, index=False)

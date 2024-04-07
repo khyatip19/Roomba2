@@ -28,7 +28,7 @@ BLOCKED = 0
 # Example parameters and simulation run
 D = 35  # Dimension of the grid
 k = range(3, 8)  # From 3 to 7 inclusive
-alpha_range = np.arange(0, 0.8, 0.1)  # From 0 to 1 in increments of 0.1
+alpha_range = np.linspace(0.01, 0.2, 30) # From 0 to 1 in increments of 0.1
 
 def initialize_grid(D):
     """Initialize the simulation grid with blocked and unblocked cells."""
@@ -548,7 +548,7 @@ def run_simulations_with_parameters(k_range, alpha_range, num_simulations=1):
                 total_steps += steps
                 if crew_rescued:
                     success_count += 1
-            print(f"Completed: k={k_value}, alpha={alpha_value}, simulation={simulation_index+1}/{num_simulations}")
+                print(f"Completed: k={k_value}, alpha={alpha_value}, simulation={simulation_index+1}/{num_simulations}")
 
             avg_steps = total_steps / num_simulations
             success_rate = success_count / num_simulations
