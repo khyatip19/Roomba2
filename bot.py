@@ -8,14 +8,25 @@ from math import exp
 # Assume ship_layout.py is correctly set up with generate_ship_layout function
 from ship_layout import generate_ship_layout
 
+# Constants for grid cell states
+EMPTY = 1
+BOT = 2
+ALIEN = 3
+CREW_MEMBER = 4
+BLOCKED = 0
+
 # Parameters
 D = 35  # Dimension of the grid
 k = 3  # Detection range
 alpha = 0.5  # Sensitivity of the beep detection
-no_of_aliens = 2  # Number of aliens
+no_of_aliens = 1  # Number of aliens
 
 # Generate ship layout
 ship_layout = generate_ship_layout(D)
+
+# Function definitions
+def manhattan_distance(x1, y1, x2, y2):
+    return abs(x1 - x2) + abs(y1 - y2)
 
 # Function to generate a random position on the ship layout
 def random_position(D, grid):
@@ -97,12 +108,37 @@ def crewBeep(curr_pos, crew_positions, dist, alpha, open_cells):
             return True
     return False
 
+def initialize_belief_matrix(D, bot_position, crew_position):
+    belief_matrix = np.zeros((D, D))
+    # Initially, mark the bot's and crew's positions with special values or keep separate
+    belief_matrix[bot_position] = -1  # For example, -1 for bot
+    belief_matrix[crew_position] = -2  # For example, -2 for crew
+    return belief_matrix
+
+def update_belief_for_alien(belief_matrix, bot_position, detection_zone, detected):
+    # Update belief based on alien detection or absence
+    if detected:
+        # Increase belief within detection zone
+        pass  # Implementation needed
+    else:
+        # Decrease belief within detection zone or adjust outside
+        pass  # Implementation needed
+
+def move_bot_towards_crew(belief_matrix, bot_position, crew_position):
+    # Determine the next move based on current position and target
+    pass  # Implementation needed
+
+def account_for_alien_movement(belief_matrix):
+    # Spread the probability of alien's presence to adjacent cells
+    pass  # Implementation needed
+
 # Place entities on the layout
 bot_position = random_position(D, ship_layout)
 crew_positions = [random_position(D, ship_layout) for _ in range(1)]  # Single crew member for this example
 open_cells = np.argwhere(ship_layout == 1)
 dist = np.array([[manhattan_dist(cell, crew) for cell in open_cells] for crew in crew_positions])
 alien_positions = place_aliens_outside_detection(D, ship_layout, no_of_aliens, bot_position, k)
+belief_matrix = initialize_belief_matrix(D, bot_position, crew_position)
 
 # Visualization and sensor checks
 #visualize_layout_with_entities(ship_layout, bot_position, crew_positions, alien_positions, k)

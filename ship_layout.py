@@ -69,9 +69,9 @@ def generate_ship_layout(D, dead_end_opening_fraction=0.5):
     open_dead_end_neighbors(layout, fraction=dead_end_opening_fraction)
     return layout
 
-D = 35  # Dimension of the grid
+D = 5  # Dimension of the grid
 dead_end_opening_fraction = 0.5
 ship_layout = generate_ship_layout(D, dead_end_opening_fraction)
 
 print(ship_layout)
-#visualize_layout(ship_layout)
+visualize_layout(ship_layout)
