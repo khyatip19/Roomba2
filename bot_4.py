@@ -367,7 +367,7 @@ def simulate(D, k_value, alpha_value, grid_layout):
     crew_saved_count = 0
     steps = 0
     path = []
-    plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
+    #plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
  
     while bot_alive and not all(crew_rescued): 
         # Check for game over conditions

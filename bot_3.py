@@ -346,11 +346,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
     steps = 0
     crew_saved_count = 0  # Initialize counter for saved crew members
     path = []
-    plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
+    #plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
  
     while bot_alive and not all(crew_rescued) and steps < 1000: 
         if bot_pos == alien_pos:
-            print(f"Bot destroyed by alien at step {steps}.")
+            #print(f"Bot destroyed by alien at step {steps}.")
             bot_alive = False
             break
         
@@ -394,7 +394,7 @@ def simulate(D, k_value, alpha_value, grid_layout):
                 crew_rescued[i] = True
                 prob_crew[crew[0], crew[1]] = 0
 
-        print(f"Bot moving to {bot_pos}")
+        #print(f"Bot moving to {bot_pos}")
 
         # Debug prints after the first move
         if steps == 0:
@@ -414,10 +414,10 @@ def simulate(D, k_value, alpha_value, grid_layout):
             alien_move = random.choice(valid_alien_moves)
             alien_pos = (alien_pos[0] + alien_move[0], alien_pos[1] + alien_move[1])
 
-        print(f"Alien moves to {alien_pos}")
+        #print(f"Alien moves to {alien_pos}")
 
         if bot_pos == alien_pos:
-            print(f"Bot destroyed by alien at step {steps}.")
+            #print(f"Bot destroyed by alien at step {steps}.")
             break
         else:
             prob_alien[bot_pos[0], bot_pos[1]] = 0
@@ -458,11 +458,11 @@ def simulate(D, k_value, alpha_value, grid_layout):
             # Adjust probabilities for remaining crew member(s)
 
         if all(crew_rescued):
-            print("All crew members rescued.")
+            #print("All crew members rescued.")
             break
 
         if steps >= 1000:
-            print("Simulation ended without rescuing the crew member.")
+            #print("Simulation ended without rescuing the crew member.")
             break
 
         # Update grid for visualization
@@ -517,7 +517,7 @@ results_df = run_simulations_with_parameters(k, alpha_range, num_simulations=10)
 # Display the results
 print(results_df)
 
-csv_file_path = "D:/USA Docs/Rutgers/Intro to AI/Project 2/Roomba2/bot_3.csv"
+csv_file_path = "bot_3.csv"
 
 # Save the DataFrame to a CSV file
 results_df.to_csv(csv_file_path, index=False)

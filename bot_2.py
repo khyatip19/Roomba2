@@ -359,7 +359,7 @@ def simulate(D, k_value, alpha_value, grid_layout):
     crew_rescued = False
     steps = 0
     path = []
-    plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
+    #plt.figure(figsize=(12, 6))  # Initialize the figure outside the loop
 
     while bot_alive and not crew_rescued and steps < 1000:
         if bot_pos == alien_pos:
